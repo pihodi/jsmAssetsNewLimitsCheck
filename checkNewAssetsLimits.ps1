@@ -1,11 +1,7 @@
-
-$token = "apiToken" #Change me
-$userName = "email" #Change me
-
-
+$token = "apiToken-changeMe"
+$userName = "email-changeMe"
 # Set your API details
-$jiraBaseUrl = "https://xxxxxxxxx.atlassian.net" #Change me
-
+$jiraBaseUrl = "https://changeMe.atlassian.net"
 # Set headers for authentication
 $headers = @{
     "Authorization" = "Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("$userName`:$token"))
@@ -17,11 +13,9 @@ $response = Invoke-RestMethod -Uri $url -Headers $headers -Method Get
 
 $assetsBaseUrl = "https://api.atlassian.com/jsm/assets/workspace/$($response.values.workspaceId)/v1"
 
-
 $url = "$assetsBaseUrl/objectschema/list"
 $response = Invoke-RestMethod -Uri $url -Headers $headers -Method Get
 $schemas = $response.values
-
 
 foreach($schema in $schemas){
     if($schema.name -ne "Services"){
@@ -48,17 +42,16 @@ foreach($schema in $schemas){
         foreach($objectType in $schema.objectTypes){      
             Write-Host "`t$($objectType.name)"
             foreach($attribute in $objectType.Attributes){            
-                Write-Host "`t`t$($attribute.name)"                      
+                Write-Host "`t`t$($attribute.name)"                  
             }        
         }
-    }
-    
+    }    
 }
 
 $objectTypesWithMoreThan2UniqueAttributes = @()
 $objectTypesWithMoreThan120Attributes = @()
 $attributeWithMoreThan50CardinalityOnURLEmailandSelect = @()
-
+$attributeWithMoreThan2700Options = @()
 
 foreach($schema in $schemas){   
     foreach($objectType in $schema.objectTypes){
@@ -71,6 +64,9 @@ foreach($schema in $schemas){
                 if($attribute.maximumCardinality -gt 50){
                     $attributeWithMoreThan50CardinalityOnURLEmailandSelect += $attribute
                 }               
+            }
+            if($attribute.options.Length -gt 2700){
+                $attributeWithMoreThan2700Options += $attribute
             }
         }
         if($uniqueAttr -gt 2){
@@ -119,14 +115,14 @@ if($attributeWithMoreThan50CardinalityOnURLEmailandSelect.Count -eq 0){
     Write-Host "`tNo attribute with more than 50 cardinality on URL, Email and Select"
 }
 
-
-
-
-
-
-
-
-
-
-
-
+Write-Host "-------------------------------------------------`n"
+write-Host "Attributes with more than 2700 options"
+foreach($attribute in $attributeWithMoreThan2700Options){
+    Write-Host "`tAttribute: $($attribute.name)"
+    Write-Host "`t`t`Object Type:$($attribute.objectType.name)"
+    Write-Host "`t`t`t`Schema:$($attribute.objectType.schema.name)"
+}
+if($attributeWithMoreThan2700Options.Count -eq 0){
+    Write-Host "`tNo attribute with more than 2700 options"
+}
+Write-Host "-------------------------------------------------`n"
